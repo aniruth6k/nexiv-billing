@@ -1,9 +1,8 @@
-// src/app/dashboard/page.tsx
+// src/app/staff/page.tsx
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabaseServer";
 import AppLayout from "@/components/layout/AppLayout";
-import StatsCards from "./components/StatsCards";
-import RecentBills from "./components/RecentBills";
+import StaffDashboard from "./components/StaffDashboard";
 
 interface Hotel {
   id: string;
@@ -12,7 +11,7 @@ interface Hotel {
   address?: string;
 }
 
-export default async function DashboardPage() {
+export default async function StaffPage() {
   const supabase = await createServerClient();
 
   try {
@@ -41,39 +40,40 @@ export default async function DashboardPage() {
       address: hotelData.address,
     };
 
-    // Fetch staff data
+    // Fetch staff data with all necessary fields
     const { data: staff } = await supabase
       .from("staff")
-      .select("*")
-      .eq("hotel_id", hotel.id);
-
-    // Fetch recent bills
-    const { data: bills } = await supabase
-      .from("bills")
-      .select("*")
+      .select(`
+        id,
+        name,
+        role,
+        contact,
+        email,
+        age,
+        place,
+        id_type,
+        id_number,
+        id_verification_notes,
+        salary,
+        joining_date,
+        emergency_contact,
+        attendance,
+        status,
+        created_at,
+        additional_info
+      `)
       .eq("hotel_id", hotel.id)
-      .order("created_at", { ascending: false })
-      .limit(10);
+      .order("created_at", { ascending: false });
 
     return (
       <AppLayout hotel={hotel}>
-        <div className="max-w-7xl mx-auto space-y-6 p-6">
-          {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Welcome back! Here's what's happening at your hotel today.</p>
-          </div>
-
-          {/* Stats Cards */}
-          <StatsCards staff={staff || []} bills={bills || []} />
-
-          {/* Recent Bills */}
-          <RecentBills bills={bills || []} />
+        <div className="max-w-7xl mx-auto p-6">
+          <StaffDashboard staff={staff || []} hotelId={hotel.id} />
         </div>
       </AppLayout>
     );
   } catch (error) {
-    console.error("Unexpected error in dashboard:", error);
+    console.error("Unexpected error in staff page:", error);
     redirect("/hotel/auth");
   }
 }

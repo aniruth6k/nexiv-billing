@@ -1,18 +1,7 @@
-"use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      router.push("/hotel"); // Let /hotel/page.tsx decide auth flow
-    };
-    checkAuth();
-  }, [router]);
-
-  return null;
+  // Server-side redirect to hotel route
+  // Let /hotel/page.tsx handle the authentication flow
+  redirect("/hotel");
 }
