@@ -1,7 +1,8 @@
 // src/components/layout/Header.tsx
 "use client";
 
-import { Bell, LogOut, User } from "lucide-react";
+import { LogOut, User, Menu } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,13 +19,93 @@ import Link from "next/link";
 
 interface HeaderProps {
   hotel?: {
+    id: string;
     name: string;
     logo_url?: string;
+    owner_id?: string;
   };
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
-export default function Header({ hotel }: HeaderProps) {
+export default function Header({ hotel, sidebarCollapsed, onToggleSidebar }: HeaderProps) {
   const router = useRouter();
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  // Find logo file for this hotel using owner_id
+  useEffect(() => {
+    const findLogo = async () => {
+      if (!hotel?.id) return;
+
+      try {
+        console.log("Looking for logo for hotel:", hotel.id, "owner:", hotel.owner_id);
+
+        let ownerId = hotel.owner_id;
+        if (!ownerId) {
+          const { data: hotelData } = await supabase
+            .from("hotels")
+            .select("owner_id")
+            .eq("id", hotel.id)
+            .single();
+          ownerId = hotelData?.owner_id;
+        }
+
+        if (!ownerId) {
+          console.log("No owner ID found for hotel");
+          return;
+        }
+
+        console.log("Using owner ID:", ownerId);
+
+        const { data: files, error } = await supabase.storage
+          .from("hotel-logos")
+          .list(ownerId, { limit: 10 });
+
+        if (error) {
+          console.error("Storage list error:", error);
+          return;
+        }
+
+        console.log("Files in owner folder:", files);
+
+        if (files && files.length > 0) {
+          const imageFile = files.find(
+            (f) =>
+              f.name.includes(".png") ||
+              f.name.includes(".jpg") ||
+              f.name.includes(".jpeg")
+          );
+
+          if (imageFile) {
+            const fullPath = `${ownerId}/${imageFile.name}`;
+            console.log("✅ Found logo at:", fullPath);
+
+            const { data } = supabase.storage
+              .from("hotel-logos")
+              .getPublicUrl(fullPath);
+
+            console.log("Generated URL:", data.publicUrl);
+            setLogoUrl(data.publicUrl);
+
+            await supabase
+              .from("hotels")
+              .update({ logo_url: data.publicUrl })
+              .eq("id", hotel.id);
+
+            console.log("✅ Updated hotel logo URL in database");
+          } else {
+            console.log("❌ No image files found in owner folder");
+          }
+        } else {
+          console.log("❌ No files found in owner folder");
+        }
+      } catch (error) {
+        console.error("Error finding logo:", error);
+      }
+    };
+
+    findLogo();
+  }, [hotel?.id, hotel?.owner_id || ""]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -32,30 +113,39 @@ export default function Header({ hotel }: HeaderProps) {
   };
 
   return (
-    <header className="flex justify-between items-center bg-white border-b px-6 py-4 shadow-sm">
-      {/* Hotel Info */}
-      <div className="flex items-center gap-3">
-        {hotel?.logo_url && (
-          <img
-            src={hotel.logo_url}
-            alt="Hotel Logo"
-            className="w-8 h-8 object-cover rounded"
-          />
-        )}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            {hotel?.name || "Hotel Management"}
-          </h2>
+    <header className="flex justify-between items-center bg-white border-b px-6 py-3 shadow-sm min-h-[64px]">
+      {/* Left side - Hotel Info */}
+      <div className="flex items-center gap-4">
+        {/* Mobile menu button - only show on mobile */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="md:hidden h-8 w-8 p-0"
+          onClick={onToggleSidebar}
+        >
+          <Menu className="w-4 h-4" />
+        </Button>
+
+        {/* Hotel Info */}
+        <div className="flex items-center gap-3">
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt="Hotel Logo"
+              className="w-8 h-8 object-cover rounded-md border"
+              onError={() => setLogoUrl(null)}
+            />
+          )}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {hotel?.name || "Hotel Management"}
+            </h2>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Notifications */}
-        <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-          <Bell className="w-4 h-4 text-gray-500" />
-        </Button>
-
-        {/* User Menu */}
+      {/* Right side - User Menu */}
+      <div className="flex items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">

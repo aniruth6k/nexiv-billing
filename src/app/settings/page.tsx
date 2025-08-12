@@ -2,19 +2,18 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabaseServer";
 import AppLayout from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building, User, Palette, Bug, Mail, Calendar } from "lucide-react";
-import CrashReportForm from "./components/CrashReportForm";
+import { User, Package, AlertTriangle, Bed } from "lucide-react";
 import ProfileSettings from "./components/ProfileSettings";
-import ThemeSettings from "./components/ThemeSettings";
+import InventoryManagement from "./components/InventoryManagement";
+import CrashReportForm from "./components/CrashReportForm";
+import RoomTypeManagement from "./components/RoomTypeManagement";
 
 interface Hotel {
   id: string;
   name: string;
   logo_url?: string;
   address?: string;
-  services?: string[];
 }
 
 export default async function SettingsPage() {
@@ -31,7 +30,7 @@ export default async function SettingsPage() {
     // Check if user has a hotel setup
     const { data: hotelData, error: hotelError } = await supabase
       .from("hotels")
-      .select("id, name, logo_url, address, services")
+      .select("id, name, logo_url, address")
       .eq("owner_id", user.id)
       .maybeSingle();
 
@@ -44,99 +43,56 @@ export default async function SettingsPage() {
       name: hotelData.name,
       logo_url: hotelData.logo_url,
       address: hotelData.address,
-      services: hotelData.services,
     };
 
     return (
       <AppLayout hotel={hotel}>
-        <div className="max-w-6xl mx-auto space-y-6 p-6">
+        <div className="max-w-7xl mx-auto space-y-6 p-6">
           {/* Header */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-            <p className="text-gray-600 mt-1">Manage your account, hotel, and system preferences.</p>
+            <p className="text-gray-600 mt-1">Manage your hotel configuration and preferences</p>
           </div>
 
           {/* Settings Tabs */}
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="profile" className="flex items-center gap-2">
-                <Building className="w-4 h-4" />
-                Hotel Profile
-              </TabsTrigger>
-              <TabsTrigger value="account" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
-                Account
+                Profile
               </TabsTrigger>
-              <TabsTrigger value="appearance" className="flex items-center gap-2">
-                <Palette className="w-4 h-4" />
-                Appearance
+              <TabsTrigger value="rooms" className="flex items-center gap-2">
+                <Bed className="w-4 h-4" />
+                Room Types
               </TabsTrigger>
-              <TabsTrigger value="support" className="flex items-center gap-2">
-                <Bug className="w-4 h-4" />
-                Support
+              <TabsTrigger value="inventory" className="flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Inventory
+              </TabsTrigger>
+              <TabsTrigger value="crash-report" className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Report Issue
               </TabsTrigger>
             </TabsList>
 
-            {/* Hotel Profile Tab */}
+            {/* Profile Settings Tab */}
             <TabsContent value="profile" className="mt-6">
               <ProfileSettings hotelId={hotel.id} />
             </TabsContent>
 
-            {/* Account Tab */}
-            <TabsContent value="account" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Account Settings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-gray-500" />
-                      Email
-                    </p>
-                    <p className="text-gray-800 ml-6">{user.email}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      Account Created
-                    </p>
-                    <p className="text-gray-800 ml-6">
-                      {new Date(user.created_at).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Room Type Management Tab */}
+            <TabsContent value="rooms" className="mt-6">
+              <RoomTypeManagement hotelId={hotel.id} />
             </TabsContent>
 
-            {/* Appearance Tab */}
-            <TabsContent value="appearance" className="mt-6">
-              <ThemeSettings />
+            {/* Inventory Management Tab */}
+            <TabsContent value="inventory" className="mt-6">
+              <InventoryManagement hotelId={hotel.id} />
             </TabsContent>
 
-            {/* Support Tab */}
-            <TabsContent value="support" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bug className="w-5 h-5" />
-                    Report an Issue
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 pt-1">
-                    Encountered a bug or have a suggestion? Let us know.
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <CrashReportForm hotelId={hotel.id} userId={user.id} />
-                </CardContent>
-              </Card>
+            {/* Crash Report Tab */}
+            <TabsContent value="crash-report" className="mt-6">
+              <CrashReportForm hotelId={hotel.id} userId={user.id} />
             </TabsContent>
           </Tabs>
         </div>

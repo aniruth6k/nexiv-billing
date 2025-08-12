@@ -84,7 +84,6 @@ export default function AuthPage() {
         });
 
         if (error) {
-          console.error("Sign up error:", error.message);
           setErrorMessage(error.message);
           return;
         }
@@ -99,8 +98,14 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-          console.error("Sign in error:", error.message);
-          setErrorMessage(error.message);
+          // Handle specific error cases with user-friendly messages
+          if (error.message === "Invalid login credentials") {
+            setErrorMessage("Invalid email or password. Please check your credentials and try again.");
+          } else if (error.message === "Email not confirmed") {
+            setErrorMessage("Please check your email and confirm your account before signing in.");
+          } else {
+            setErrorMessage(error.message);
+          }
           return;
         }
 

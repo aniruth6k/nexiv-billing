@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Bed, UtensilsCrossed, Waves, Plus, Minus, AlertCircle, ShoppingCart, User, Leaf, Flame, Clock } from "lucide-react";
+import { CheckCircle, Bed, UtensilsCrossed, Waves, Plus, Minus, AlertCircle, ShoppingCart, User, Leaf, Flame, Clock, Users, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 
 interface BillingFormProps {
@@ -32,6 +32,8 @@ interface RoomType {
   name: string;
   base_price: number;
   description?: string;
+  max_occupancy?: number;
+  amenities?: string[];
 }
 
 interface FoodItem {
@@ -106,7 +108,10 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
         supabase
           .from("room_types")
           .select("*")
-          .eq("hotel_id", hotelId),
+          .eq("hotel_id", hotelId)
+          .eq("available", true)
+          .order("sort_order", { ascending: true })
+          .order("name", { ascending: true }),
         supabase
           .from("food_items")
           .select("*")
@@ -382,47 +387,104 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
                 {/* Rooms Section */}
                 <TabsContent value="rooms" className="mt-4">
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Room Type</Label>
-                        <Select value={roomData.type} onValueChange={(value) => setRoomData(prev => ({ ...prev, type: value }))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select room type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roomTypes.map((room) => (
-                              <SelectItem key={room.id} value={room.id}>
-                                {room.name} - ₹{room.base_price}/night
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    {roomTypes.length === 0 ? (
+                      <div className="text-center py-12 text-gray-500">
+                        <Bed className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p className="font-medium mb-2">No room types available</p>
+                        <p className="text-sm">Set up your room types in Settings first</p>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Number of Nights</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={roomData.nights}
-                          onChange={(e) => setRoomData(prev => ({ ...prev, nights: parseInt(e.target.value) || 1 }))}
-                        />
-                      </div>
-                    </div>
-                    {roomData.type && (
-                      <Button 
-                        onClick={() => {
-                          const selectedRoom = roomTypes.find(r => r.id === roomData.type);
-                          if (selectedRoom) addItem(selectedRoom, 'room');
-                        }}
-                        className="w-full"
-                      >
-                        Add Room - ₹{(roomTypes.find(r => r.id === roomData.type)?.base_price || 0) * roomData.nights}
-                      </Button>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Room Type</Label>
+                            <Select value={roomData.type} onValueChange={(value) => setRoomData(prev => ({ ...prev, type: value }))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select room type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {roomTypes.map((room) => (
+                                  <SelectItem key={room.id} value={room.id}>
+                                    <div className="flex items-center justify-between w-full">
+                                      <span>{room.name}</span>
+                                      <span className="ml-2 text-green-600 font-medium">₹{room.base_price}/night</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Number of Nights</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={roomData.nights}
+                              onChange={(e) => setRoomData(prev => ({ ...prev, nights: parseInt(e.target.value) || 1 }))}
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Room Details Preview */}
+                        {roomData.type && (
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            {(() => {
+                              const selectedRoom = roomTypes.find(r => r.id === roomData.type);
+                              if (!selectedRoom) return null;
+                              
+                              return (
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="font-semibold">{selectedRoom.name}</h4>
+                                    <div className="text-right">
+                                      <div className="text-sm text-gray-600">₹{selectedRoom.base_price} x {roomData.nights} night{roomData.nights > 1 ? 's' : ''}</div>
+                                      <div className="text-lg font-bold text-green-600">₹{selectedRoom.base_price * roomData.nights}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  {selectedRoom.description && (
+                                    <p className="text-sm text-gray-600">{selectedRoom.description}</p>
+                                  )}
+                                  
+                                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                                    {selectedRoom.max_occupancy && (
+                                      <div className="flex items-center gap-1">
+                                        <Users className="w-4 h-4" />
+                                        <span>Max {selectedRoom.max_occupancy} guests</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {selectedRoom.amenities && selectedRoom.amenities.length > 0 && (
+                                    <div className="space-y-2">
+                                      <p className="text-sm font-medium text-gray-700">Amenities:</p>
+                                      <div className="flex flex-wrap gap-1">
+                                        {selectedRoom.amenities.map((amenity) => (
+                                          <Badge key={amenity} variant="secondary" className="text-xs">
+                                            {amenity}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  <Button 
+                                    onClick={() => addItem(selectedRoom, 'room')}
+                                    className="w-full mt-3"
+                                  >
+                                    Add Room - ₹{selectedRoom.base_price * roomData.nights}
+                                  </Button>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </TabsContent>
 
-                {/* Simplified Food Section */}
+                {/* Food Section */}
                 <TabsContent value="food" className="mt-4">
                   <div className="space-y-4">
                     {/* Category Filter */}
