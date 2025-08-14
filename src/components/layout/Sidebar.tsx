@@ -28,19 +28,19 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <TooltipProvider>
       <aside className={cn(
-        "fixed left-0 top-0 h-screen bg-white border-r shadow-sm z-10 transition-all duration-300",
+        "fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border shadow-sm z-10 transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}>
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className={cn(
-            "flex items-center border-b transition-all duration-300",
+            "flex items-center border-b border-sidebar-border transition-all duration-300",
             collapsed ? "px-2 py-4 justify-center" : "px-6 py-4"
           )}>
             {collapsed ? (
-              <div className="text-xl font-bold text-blue-600">N</div>
+              <div className="text-xl font-bold text-primary">N</div>
             ) : (
-              <h1 className="text-2xl font-bold text-gray-900">Nexiv</h1>
+              <h1 className="text-2xl font-bold text-foreground">Nexiv</h1>
             )}
           </div>
 
@@ -55,8 +55,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     className={cn(
                       "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full",
                       isActiveLink(href)
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground border border-sidebar-border"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                       collapsed && "justify-center px-2"
                     )}
                   >
@@ -85,7 +85,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
           {/* Toggle Button */}
           <div className={cn(
-            "p-2 border-t",
+            "p-2 border-t border-sidebar-border",
             collapsed ? "flex justify-center" : "flex justify-end"
           )}>
             <Button
@@ -104,8 +104,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
           {/* Footer */}
           {!collapsed && (
-            <div className="p-4 border-t">
-              <div className="text-xs text-gray-500 text-center">
+            <div className="p-4 border-t border-sidebar-border">
+              <div className="text-xs text-muted-foreground text-center">
                 Hotel Management System
               </div>
             </div>
