@@ -4,7 +4,7 @@ A Next.js application with Supabase backend for hotel billing, staff management,
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js 20
 - pnpm
 - Git
 - Supabase CLI
