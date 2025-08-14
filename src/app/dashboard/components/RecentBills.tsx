@@ -6,8 +6,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+interface Bill {
+  id: string;
+  customer_name?: string;
+  total: string | number;
+  created_at: string;
+  hotel_id: string;
+}
+
 interface RecentBillsProps {
-  bills: any[];
+  bills: Bill[];
 }
 
 export default function RecentBills({ bills }: RecentBillsProps) {
@@ -53,7 +61,7 @@ export default function RecentBills({ bills }: RecentBillsProps) {
                   #{bill.id.slice(-8).toUpperCase()}
                 </TableCell>
                 <TableCell>{bill.customer_name || "Walk-in Customer"}</TableCell>
-                <TableCell>₹{parseFloat(bill.total).toLocaleString()}</TableCell>
+                <TableCell>₹{parseFloat(bill.total.toString()).toLocaleString()}</TableCell>
                 <TableCell>
                   {new Date(bill.created_at).toLocaleDateString()}
                 </TableCell>

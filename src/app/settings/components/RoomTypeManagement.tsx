@@ -30,6 +30,28 @@ interface RoomTypeManagementProps {
   hotelId: string;
 }
 
+interface FormData {
+  name: string;
+  description: string;
+  base_price: string;
+  max_occupancy: string;
+  amenities: string[];
+  available: boolean;
+  sort_order: string;
+}
+
+interface Statistics {
+  total: number;
+  available: number;
+  unavailable: number;
+  avgPrice: number;
+}
+
+interface SupabaseError {
+  message: string;
+  code?: string;
+}
+
 const COMMON_AMENITIES = [
   "WiFi",
   "AC",
@@ -60,12 +82,12 @@ export default function RoomTypeManagement({ hotelId }: RoomTypeManagementProps)
   const [error, setError] = useState<string | null>(null);
 
   // Form states
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
     base_price: '',
     max_occupancy: '2',
-    amenities: [] as string[],
+    amenities: [],
     available: true,
     sort_order: '0'
   });
@@ -109,15 +131,16 @@ export default function RoomTypeManagement({ hotelId }: RoomTypeManagementProps)
       }));
 
       setRoomTypes(formattedData);
-    } catch (error: any) {
-      console.error("Error fetching room types:", error);
+    } catch (error) {
+      const supabaseError = error as SupabaseError;
+      console.error("Error fetching room types:", supabaseError);
       
       let errorMessage = "Failed to load room types";
       
-      if (error?.message) {
-        errorMessage = `Failed to load room types: ${error.message}`;
-      } else if (error?.code) {
-        errorMessage = `Failed to load room types: Error ${error.code}`;
+      if (supabaseError?.message) {
+        errorMessage = `Failed to load room types: ${supabaseError.message}`;
+      } else if (supabaseError?.code) {
+        errorMessage = `Failed to load room types: Error ${supabaseError.code}`;
       }
       
       setError(errorMessage);
@@ -179,12 +202,13 @@ export default function RoomTypeManagement({ hotelId }: RoomTypeManagementProps)
 
       resetForm();
       fetchRoomTypes();
-    } catch (error: any) {
-      console.error("Error saving room type:", error);
-      if (error.code === '23505') {
+    } catch (error) {
+      const supabaseError = error as SupabaseError;
+      console.error("Error saving room type:", supabaseError);
+      if (supabaseError.code === '23505') {
         toast.error("A room type with this name already exists");
       } else {
-        toast.error(`Failed to save room type: ${error.message || 'Unknown error'}`);
+        toast.error(`Failed to save room type: ${supabaseError.message || 'Unknown error'}`);
       }
     }
   };
@@ -218,9 +242,10 @@ export default function RoomTypeManagement({ hotelId }: RoomTypeManagementProps)
       
       toast.success("Room type deleted successfully");
       fetchRoomTypes();
-    } catch (error: any) {
-      console.error("Error deleting room type:", error);
-      toast.error(`Failed to delete room type: ${error.message || 'Unknown error'}`);
+    } catch (error) {
+      const supabaseError = error as SupabaseError;
+      console.error("Error deleting room type:", supabaseError);
+      toast.error(`Failed to delete room type: ${supabaseError.message || 'Unknown error'}`);
     }
   };
 
@@ -244,9 +269,10 @@ export default function RoomTypeManagement({ hotelId }: RoomTypeManagementProps)
       );
       
       toast.success(`${roomType.name} ${!roomType.available ? 'enabled' : 'disabled'}`);
-    } catch (error: any) {
-      console.error("Error updating availability:", error);
-      toast.error(`Failed to update availability: ${error.message || 'Unknown error'}`);
+    } catch (error) {
+      const supabaseError = error as SupabaseError;
+      console.error("Error updating availability:", supabaseError);
+      toast.error(`Failed to update availability: ${supabaseError.message || 'Unknown error'}`);
     } finally {
       setUpdatingAvailability(null);
     }
@@ -275,7 +301,7 @@ export default function RoomTypeManagement({ hotelId }: RoomTypeManagementProps)
     }));
   };
 
-  const getStatistics = () => {
+  const getStatistics = (): Statistics => {
     const total = roomTypes.length;
     const available = roomTypes.filter(roomType => roomType.available).length;
     const unavailable = total - available;

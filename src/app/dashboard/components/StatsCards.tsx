@@ -2,22 +2,45 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, CreditCard, IndianRupee } from "lucide-react";
+import { Users, CreditCard, IndianRupee, LucideIcon } from "lucide-react";
+
+interface Staff {
+  id: string;
+  name: string;
+  role: string;
+  hotel_id: string;
+  created_at: string;
+}
+
+interface Bill {
+  id: string;
+  total: string | number;
+  created_at: string;
+  hotel_id: string;
+  customer_name?: string;
+}
 
 interface StatsCardsProps {
-  staff: any[];
-  bills: any[];
+  staff: Staff[];
+  bills: Bill[];
+}
+
+interface StatItem {
+  title: string;
+  value: string;
+  icon: LucideIcon;
+  description: string;
 }
 
 export default function StatsCards({ staff, bills }: StatsCardsProps) {
-  const totalRevenue = bills.reduce((sum, bill) => sum + (parseFloat(bill.total) || 0), 0);
+  const totalRevenue = bills.reduce((sum, bill) => sum + (parseFloat(bill.total.toString()) || 0), 0);
   const todayBills = bills.filter(bill => {
     const billDate = new Date(bill.created_at).toDateString();
     const today = new Date().toDateString();
     return billDate === today;
   });
 
-  const stats = [
+  const stats: StatItem[] = [
     { 
       title: "Total Revenue", 
       value: `₹${totalRevenue.toLocaleString()}`,

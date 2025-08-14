@@ -11,6 +11,15 @@ import { Calendar, Search, Filter, Receipt, Eye, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
+interface BillItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  category: 'room' | 'food' | 'service';
+  originalPrice: number;
+}
+
 interface Bill {
   id: string;
   customer_name?: string;
@@ -22,7 +31,7 @@ interface Bill {
   bill_number?: string;
   payment_method: string;
   payment_status: string;
-  items: any[];
+  items: BillItem[];
 }
 
 interface BillingHistoryProps {
@@ -56,7 +65,7 @@ export default function BillingHistory({ hotelId }: BillingHistoryProps) {
 
       if (error) throw error;
       setBills(data || []);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching bills:", error);
       toast.error("Failed to fetch bills");
     } finally {
@@ -65,23 +74,21 @@ export default function BillingHistory({ hotelId }: BillingHistoryProps) {
   };
 
   const filterBills = () => {
-    let filtered = [...bills];
+    const filtered = [...bills];
 
-    // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(bill =>
+      filtered.splice(0, filtered.length, ...filtered.filter(bill =>
         bill.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bill.customer_phone?.includes(searchTerm) ||
         bill.bill_number?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      ));
     }
 
-    // Date filter
     if (dateFilter !== "all") {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
-      filtered = filtered.filter(bill => {
+      filtered.splice(0, filtered.length, ...filtered.filter(bill => {
         const billDate = new Date(bill.created_at);
         
         switch (dateFilter) {
@@ -96,19 +103,17 @@ export default function BillingHistory({ hotelId }: BillingHistoryProps) {
           default:
             return true;
         }
-      });
+      }));
     }
 
-    // Payment filter
     if (paymentFilter !== "all") {
-      filtered = filtered.filter(bill => bill.payment_status === paymentFilter);
+      filtered.splice(0, filtered.length, ...filtered.filter(bill => bill.payment_status === paymentFilter));
     }
 
     setFilteredBills(filtered);
   };
 
   const deleteBill = async (billId: string, billNumber?: string) => {
-    // Show confirmation using sonner
     const customerName = bills.find(b => b.id === billId)?.customer_name || "Walk-in Customer";
     const billRef = billNumber ? `#${billNumber.slice(-8)}` : "this bill";
     
@@ -139,7 +144,7 @@ export default function BillingHistory({ hotelId }: BillingHistoryProps) {
                     
                     setBills(prev => prev.filter(bill => bill.id !== billId));
                     toast.success("Bill deleted successfully");
-                  } catch (error) {
+                  } catch (error: unknown) {
                     console.error("Error deleting bill:", error);
                     toast.error("Failed to delete bill");
                   }
@@ -181,7 +186,6 @@ export default function BillingHistory({ hotelId }: BillingHistoryProps) {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -236,7 +240,6 @@ export default function BillingHistory({ hotelId }: BillingHistoryProps) {
         </Card>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -287,7 +290,6 @@ export default function BillingHistory({ hotelId }: BillingHistoryProps) {
         </CardContent>
       </Card>
 
-      {/* Bills List */}
       <Card>
         <CardHeader>
           <CardTitle>Bills History</CardTitle>

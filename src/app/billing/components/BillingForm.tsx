@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Bed, UtensilsCrossed, Waves, Plus, Minus, AlertCircle, ShoppingCart, User, Leaf, Flame, Clock, Users, DollarSign } from "lucide-react";
+import { Bed, UtensilsCrossed, Waves, Plus, Minus, AlertCircle, ShoppingCart, User, Leaf, Flame, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 
 interface BillingFormProps {
@@ -65,20 +65,15 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Data from database
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
-
-  // Filter states for food
   const [selectedFoodCategory, setSelectedFoodCategory] = useState<string>("all");
-
   const [roomData, setRoomData] = useState({
     type: "",
     nights: 1,
   });
 
-  // Enhanced Food categories with all 6 categories
   const FOOD_CATEGORIES = [
     { value: 'all', label: 'All Items', emoji: '🍽️' },
     { value: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -96,7 +91,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
     'very_spicy': { label: 'Very Spicy', emoji: '🔴' }
   };
 
-  // Fetch data from database
   useEffect(() => {
     fetchData();
   }, [hotelId]);
@@ -134,7 +128,7 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
       setRoomTypes(roomTypesResult.data || []);
       setFoodItems(foodItemsResult.data || []);
       setServices(servicesResult.data || []);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching data:", error);
       setError("Failed to load billing data. Please refresh the page.");
       toast.error("Failed to load data");
@@ -162,8 +156,8 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
     return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
-  const addItem = (item: any, category: 'room' | 'food' | 'service', quantity = 1) => {
-    const price = category === 'room' ? item.base_price || item.price : item.price;
+  const addItem = (item: RoomType | FoodItem | ServiceItem, category: 'room' | 'food' | 'service', quantity = 1) => {
+    const price = category === 'room' ? (item as RoomType).base_price || (item as FoodItem | ServiceItem).price : (item as FoodItem | ServiceItem).price;
     const finalPrice = category === 'room' ? price * roomData.nights : price;
     
     const newItem: BillItem = {
@@ -178,7 +172,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
     setSelectedItems(prev => [...prev, newItem]);
     toast.success(`${item.name} added to bill`);
     
-    // Reset room selection after adding
     if (category === 'room') {
       setRoomData({ type: "", nights: 1 });
     }
@@ -228,7 +221,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
       const taxAmount = getTax();
       const total = getFinalTotal();
 
-      // Save main bill
       const { data: billData, error: billError } = await supabase
         .from("bills")
         .insert({
@@ -239,7 +231,7 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
           subtotal: subtotal,
           tax_amount: taxAmount,
           total: total,
-          items: selectedItems, // Legacy field for backward compatibility
+          items: selectedItems,
           payment_method: "cash",
           payment_status: "paid"
         })
@@ -250,7 +242,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
         throw new Error(`Failed to save bill: ${billError.message}`);
       }
 
-      // Save individual bill items
       const billItems = selectedItems.map(item => ({
         bill_id: billData.id,
         hotel_id: hotelId,
@@ -267,11 +258,10 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
 
       if (itemsError) {
         console.error("Error saving bill items:", itemsError);
-        // Don't throw here as main bill is saved
       }
 
       return billData;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error saving bill:", error);
       throw error;
     } finally {
@@ -297,12 +287,11 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
       await saveBillToDatabase();
       toast.success("Bill created successfully!");
       
-      // Reset form
       setCustomerName("");
       setCustomerPhone("");
       setSelectedItems([]);
       setRoomData({ type: "", nights: 1 });
-    } catch (error) {
+    } catch (error: unknown) {
       setError("Failed to save bill. Please try again.");
       toast.error("Failed to create bill");
     }
@@ -329,9 +318,7 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column - Customer Info & Items */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Customer Information */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -362,7 +349,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
             </CardContent>
           </Card>
 
-          {/* Item Selection */}
           <Card>
             <CardHeader>
               <CardTitle>Add Items to Bill</CardTitle>
@@ -384,7 +370,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Rooms Section */}
                 <TabsContent value="rooms" className="mt-4">
                   <div className="space-y-4">
                     {roomTypes.length === 0 ? (
@@ -425,7 +410,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
                           </div>
                         </div>
                         
-                        {/* Room Details Preview */}
                         {roomData.type && (
                           <div className="p-4 bg-gray-50 rounded-lg">
                             {(() => {
@@ -484,10 +468,8 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
                   </div>
                 </TabsContent>
 
-                {/* Food Section */}
                 <TabsContent value="food" className="mt-4">
                   <div className="space-y-4">
-                    {/* Category Filter */}
                     <div className="flex items-center gap-4">
                       <Label>Category:</Label>
                       <Select value={selectedFoodCategory} onValueChange={setSelectedFoodCategory}>
@@ -507,7 +489,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
                       </Select>
                     </div>
 
-                    {/* Food Items List */}
                     <div className="space-y-3 max-h-80 overflow-y-auto">
                       {getFilteredFoodItems().length === 0 ? (
                         <div className="text-center py-12 text-gray-500">
@@ -583,7 +564,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
                   </div>
                 </TabsContent>
 
-                {/* Services Section */}
                 <TabsContent value="services" className="mt-4">
                   <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto">
                     {services.length === 0 ? (
@@ -618,7 +598,6 @@ export default function BillingForm({ hotelId }: BillingFormProps) {
           </Card>
         </div>
 
-        {/* Right Column - Bill Summary */}
         <div className="space-y-6">
           <Card className="sticky top-6">
             <CardHeader>

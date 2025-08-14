@@ -2,12 +2,22 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, UserPlus, Calendar, BarChart3, TrendingUp, Clock } from "lucide-react";
 import AddStaffForm from "./AddStaffForm";
 import AttendanceGrid from "./AttendanceGrid";
+
+interface AttendanceRecord {
+  date: string;
+  status: 'present' | 'absent' | 'late' | 'half_day';
+}
+
+interface AdditionalInfo {
+  age?: number;
+  place?: string;
+  identification?: string;
+}
 
 interface Staff {
   id: string;
@@ -23,25 +33,38 @@ interface Staff {
   salary?: number;
   joining_date?: string;
   emergency_contact?: string;
-  attendance: Array<{
-    date: string;
-    status: 'present' | 'absent' | 'late' | 'half_day';
-  }>;
+  attendance: AttendanceRecord[];
   status: string;
   created_at: string;
-  additional_info?: {
-    age?: number;
-    place?: string;
-    identification?: string;
-  };
+  additional_info?: AdditionalInfo;
 }
 
 interface StaffWithTodayStatus extends Staff {
   todayStatus?: 'present' | 'absent' | 'late' | 'half_day';
-  periodRecords: Array<{
-    date: string;
-    status: 'present' | 'absent' | 'late' | 'half_day';
-  }>;
+  periodRecords: AttendanceRecord[];
+}
+
+interface StaffWithAttendanceRate extends Staff {
+  attendanceRate: number;
+}
+
+interface AttendanceStats {
+  present: number;
+  absent: number;
+  late: number;
+  halfDay: number;
+  total: number;
+  notMarked?: number;
+  averageAttendance?: number;
+}
+
+interface AttendanceTrendDay {
+  date: string;
+  present: number;
+  absent: number;
+  late: number;
+  halfDay: number;
+  total: number;
 }
 
 interface StaffDashboardProps {
@@ -49,10 +72,12 @@ interface StaffDashboardProps {
   hotelId: string;
 }
 
-export default function StaffDashboard({ staff, hotelId }: StaffDashboardProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today');
+type PeriodType = 'today' | 'week' | 'month';
 
-  const getAttendanceStats = (period: 'today' | 'week' | 'month' = 'today') => {
+export default function StaffDashboard({ staff, hotelId }: StaffDashboardProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('today');
+
+  const getAttendanceStats = (period: PeriodType = 'today'): AttendanceStats => {
     const now = new Date();
     let startDate: Date;
     
@@ -122,7 +147,7 @@ export default function StaffDashboard({ staff, hotelId }: StaffDashboardProps) 
     }
   };
 
-  const getTopPerformers = () => {
+  const getTopPerformers = (): StaffWithAttendanceRate[] => {
     return staff
       .map(member => {
         const totalDays = member.attendance.length;
@@ -134,7 +159,7 @@ export default function StaffDashboard({ staff, hotelId }: StaffDashboardProps) 
       .slice(0, 5);
   };
 
-  const getAttendanceTrend = () => {
+  const getAttendanceTrend = (): AttendanceTrendDay[] => {
     const last7Days = [];
     const now = new Date();
     
@@ -173,6 +198,10 @@ export default function StaffDashboard({ staff, hotelId }: StaffDashboardProps) 
     }
   };
 
+  const handlePeriodChange = (value: string) => {
+    setSelectedPeriod(value as PeriodType);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -208,7 +237,7 @@ export default function StaffDashboard({ staff, hotelId }: StaffDashboardProps) 
                   <Users className="w-5 h-5" />
                   Attendance Summary
                 </CardTitle>
-                <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
+                <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -244,13 +273,13 @@ export default function StaffDashboard({ staff, hotelId }: StaffDashboardProps) 
                   <div className="text-2xl font-bold text-orange-600">{stats.halfDay}</div>
                   <div className="text-sm text-gray-500">Half Day</div>
                 </div>
-                {selectedPeriod !== 'today' && 'averageAttendance' in stats && (
+                {selectedPeriod !== 'today' && stats.averageAttendance !== undefined && (
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">{stats.averageAttendance}%</div>
                     <div className="text-sm text-gray-500">Avg Rate</div>
                   </div>
                 )}
-                {selectedPeriod === 'today' && 'notMarked' in stats && (
+                {selectedPeriod === 'today' && stats.notMarked !== undefined && (
                   <div className="text-center">
                     <div className="text-2xl font-bold text-gray-600">{stats.notMarked}</div>
                     <div className="text-sm text-gray-500">Not Marked</div>

@@ -12,6 +12,17 @@ import { CalendarDays, MapPin, Phone, Users2, Clock, Trash2, Eye } from "lucide-
 import StaffDetailsPanel from "./StaffDetailsPanel";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
+interface AttendanceRecord {
+  date: string;
+  status: 'present' | 'absent' | 'late' | 'half_day';
+}
+
+interface AdditionalInfo {
+  age?: number;
+  place?: string;
+  identification?: string;
+}
+
 interface Staff {
   id: string;
   name: string;
@@ -26,17 +37,10 @@ interface Staff {
   salary?: number;
   joining_date?: string;
   emergency_contact?: string;
-  attendance: Array<{
-    date: string;
-    status: 'present' | 'absent' | 'late' | 'half_day';
-  }>;
+  attendance: AttendanceRecord[];
   status: string;
   created_at: string;
-  additional_info?: {
-    age?: number;
-    place?: string;
-    identification?: string;
-  };
+  additional_info?: AdditionalInfo;
 }
 
 interface AttendanceGridProps {
@@ -44,7 +48,9 @@ interface AttendanceGridProps {
   hotelId: string;
 }
 
-export default function AttendanceGrid({ staff, hotelId }: AttendanceGridProps) {
+type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day';
+
+export default function AttendanceGrid({ staff }: AttendanceGridProps) {
   const router = useRouter();
   const [attendanceLoading, setAttendanceLoading] = useState<string | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
@@ -52,7 +58,7 @@ export default function AttendanceGrid({ staff, hotelId }: AttendanceGridProps) 
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const markAttendance = async (staffId: string, status: 'present' | 'absent' | 'late' | 'half_day') => {
+  const markAttendance = async (staffId: string, status: AttendanceStatus) => {
     setAttendanceLoading(staffId);
     
     try {
@@ -73,7 +79,7 @@ export default function AttendanceGrid({ staff, hotelId }: AttendanceGridProps) 
       const currentAttendance = Array.isArray(currentStaff.attendance) ? currentStaff.attendance : [];
       
       // Remove any existing attendance for today
-      const filteredAttendance = currentAttendance.filter((a: any) => a.date !== today);
+      const filteredAttendance = currentAttendance.filter((a: AttendanceRecord) => a.date !== today);
       
       // Add new attendance record
       const updatedAttendance = [...filteredAttendance, { date: today, status }];
@@ -128,12 +134,12 @@ export default function AttendanceGrid({ staff, hotelId }: AttendanceGridProps) 
     }
   };
 
-  const getTodayAttendance = (attendance: Staff['attendance']) => {
+  const getTodayAttendance = (attendance: AttendanceRecord[]) => {
     const today = new Date().toISOString().split('T')[0];
     return attendance.find(a => a.date === today);
   };
 
-  const getAttendanceRate = (attendance: Staff['attendance']) => {
+  const getAttendanceRate = (attendance: AttendanceRecord[]) => {
     const totalDays = attendance.length;
     if (totalDays === 0) return 0;
     
@@ -291,7 +297,7 @@ export default function AttendanceGrid({ staff, hotelId }: AttendanceGridProps) 
                         </Badge>
                       ) : (
                         <Select
-                          onValueChange={(value) => markAttendance(member.id, value as any)}
+                          onValueChange={(value) => markAttendance(member.id, value as AttendanceStatus)}
                           disabled={attendanceLoading === member.id}
                         >
                           <SelectTrigger className="w-36 h-10">

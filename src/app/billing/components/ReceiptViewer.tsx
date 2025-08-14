@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Download, Printer, Search, Receipt as ReceiptIcon, ArrowLeft } from "lucide-react";
+
+interface BillItem {
+  name: string;
+  category?: string;
+  price: number;
+  originalPrice?: number;
+  quantity: number;
+}
 
 interface Bill {
   id: string;
@@ -21,7 +27,7 @@ interface Bill {
   bill_number?: string;
   payment_method: string;
   payment_status: string;
-  items: any[];
+  items: BillItem[];
 }
 
 interface Hotel {
@@ -44,12 +50,7 @@ export default function ReceiptViewer({ hotelId }: ReceiptViewerProps) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    fetchBills();
-    fetchHotelInfo();
-  }, [hotelId]);
-
-  const fetchBills = async () => {
+  const fetchBills = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -66,9 +67,9 @@ export default function ReceiptViewer({ hotelId }: ReceiptViewerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [hotelId]);
 
-  const fetchHotelInfo = async () => {
+  const fetchHotelInfo = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("hotels")
@@ -81,7 +82,12 @@ export default function ReceiptViewer({ hotelId }: ReceiptViewerProps) {
     } catch (error) {
       console.error("Error fetching hotel info:", error);
     }
-  };
+  }, [hotelId]);
+
+  useEffect(() => {
+    fetchBills();
+    fetchHotelInfo();
+  }, [fetchBills, fetchHotelInfo]);
 
   const filteredBills = bills.filter(bill =>
     bill.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -304,7 +310,7 @@ export default function ReceiptViewer({ hotelId }: ReceiptViewerProps) {
                         </div>
                       </div>
                       <div className="font-medium">
-                        ₹{((item.price || item.originalPrice) * (item.quantity || 1)).toFixed(2)}
+                        ₹{((item.price || item.originalPrice || 0) * (item.quantity || 1)).toFixed(2)}
                       </div>
                     </div>
                   )) || []}

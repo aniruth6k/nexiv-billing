@@ -22,6 +22,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+interface BillItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  category: 'room' | 'food' | 'service';
+  originalPrice: number;
+}
+
 interface BillingSummaryProps {
   hotelId: string;
 }
@@ -68,7 +77,6 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
       const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       const previousMonth = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
 
-      // Fetch all bills for the hotel
       const { data: allBills, error: billsError } = await supabase
         .from("bills")
         .select("*")
@@ -77,7 +85,6 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
 
       if (billsError) throw billsError;
 
-      // Fetch recent bills
       const { data: recentBills, error: recentError } = await supabase
         .from("bills")
         .select("*")
@@ -87,30 +94,25 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
 
       if (recentError) throw recentError;
 
-      // Calculate summary statistics
-      const totalRevenue = allBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
+      const totalRevenue = allBills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
       const totalBills = allBills.length;
       const averageBillAmount = totalBills > 0 ? totalRevenue / totalBills : 0;
 
-      // Today's data
-      const todayBills = allBills.filter(bill => new Date(bill.created_at) >= today);
-      const todayRevenue = todayBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
+      const todayBills = allBills.filter((bill: any) => new Date(bill.created_at) >= today);
+      const todayRevenue = todayBills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
 
-      // Last month's data for growth calculation
-      const lastMonthBills = allBills.filter(bill => {
+      const lastMonthBills = allBills.filter((bill: any) => {
         const billDate = new Date(bill.created_at);
         return billDate >= lastMonth && billDate < now;
       });
-      const lastMonthRevenue = lastMonthBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
+      const lastMonthRevenue = lastMonthBills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
 
-      // Previous month's data for comparison
-      const previousMonthBills = allBills.filter(bill => {
+      const previousMonthBills = allBills.filter((bill: any) => {
         const billDate = new Date(bill.created_at);
         return billDate >= previousMonth && billDate < lastMonth;
       });
-      const previousMonthRevenue = previousMonthBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
+      const previousMonthRevenue = previousMonthBills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
 
-      // Calculate growth rates
       const revenueGrowth = previousMonthRevenue > 0 
         ? ((lastMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100 
         : 0;
@@ -118,12 +120,11 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
         ? ((lastMonthBills.length - previousMonthBills.length) / previousMonthBills.length) * 100 
         : 0;
 
-      // Category breakdown (simplified estimation)
-      let categoryBreakdown = { room: 0, food: 0, service: 0 };
+      const categoryBreakdown = { room: 0, food: 0, service: 0 };
       
-      allBills.forEach(bill => {
+      allBills.forEach((bill: any) => {
         if (bill.items && Array.isArray(bill.items)) {
-          bill.items.forEach((item: any) => {
+          bill.items.forEach((item: BillItem) => {
             const amount = (item.price || 0) * (item.quantity || 1);
             if (item.category === 'room') {
               categoryBreakdown.room += amount;
@@ -140,12 +141,12 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
         totalRevenue,
         totalBills,
         averageBillAmount,
-        todayRevenue: todayBills.reduce((sum, bill) => sum + (bill.total || 0), 0),
+        todayRevenue,
         todayBills: todayBills.length,
         revenueGrowth,
         billsGrowth,
         categoryBreakdown,
-        recentBills: recentBills.map(bill => ({
+        recentBills: recentBills.map((bill: any) => ({
           id: bill.id,
           bill_number: bill.bill_number,
           customer_name: bill.customer_name,
@@ -155,7 +156,7 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
         }))
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching summary data:", error);
       setError("Failed to load billing summary");
     } finally {
@@ -200,7 +201,6 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
 
   return (
     <div className="space-y-6">
-      {/* Overview Cards - Minimal Design */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border border-gray-200">
           <CardContent className="p-6">
@@ -293,7 +293,6 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
         </Card>
       </div>
 
-      {/* Category Breakdown */}
       <Card className="border border-gray-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -324,7 +323,6 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
         </CardContent>
       </Card>
 
-      {/* Recent Activity */}
       <Card className="border border-gray-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -407,7 +405,6 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
       <Card className="border border-gray-200">
         <CardHeader>
           <CardTitle className="text-lg text-gray-900">Quick Actions</CardTitle>

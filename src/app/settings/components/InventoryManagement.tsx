@@ -41,6 +41,22 @@ interface InventoryManagementProps {
   hotelId: string;
 }
 
+interface FormData {
+  name: string;
+  description: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  minimum_stock: number;
+  price_per_unit: number;
+  supplier: string;
+}
+
+interface SupabaseError {
+  message: string;
+  code?: string;
+}
+
 export default function InventoryManagement({ hotelId }: InventoryManagementProps) {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +66,7 @@ export default function InventoryManagement({ hotelId }: InventoryManagementProp
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     description: "",
     category: "",
@@ -135,9 +151,10 @@ export default function InventoryManagement({ hotelId }: InventoryManagementProp
       setEditingItem(null);
       resetForm();
       fetchInventoryItems();
-    } catch (error: any) {
-      console.error("Error saving item:", error);
-      toast.error(error.message || "Failed to save item");
+    } catch (error) {
+      const supabaseError = error as SupabaseError;
+      console.error("Error saving item:", supabaseError);
+      toast.error(supabaseError.message || "Failed to save item");
     } finally {
       setIsSubmitting(false);
     }
@@ -170,9 +187,10 @@ export default function InventoryManagement({ hotelId }: InventoryManagementProp
       if (error) throw error;
       toast.success("Item deleted successfully");
       fetchInventoryItems();
-    } catch (error: any) {
-      console.error("Error deleting item:", error);
-      toast.error(error.message || "Failed to delete item");
+    } catch (error) {
+      const supabaseError = error as SupabaseError;
+      console.error("Error deleting item:", supabaseError);
+      toast.error(supabaseError.message || "Failed to delete item");
     }
   };
 
