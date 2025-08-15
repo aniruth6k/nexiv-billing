@@ -67,14 +67,11 @@ Initialize and run migrations:
 # Initialize Supabase (if not already done)
 npx supabase init
 
+# Login to Supabase
+npx supabase login
+
 # Link to your Supabase project
 npx supabase link --project-ref your-project-ref
-
-# Apply all migrations
-npx supabase db push
-
-# Or run migrations individually
-npx supabase migration up
 ```
 
 ### 5. Development Server
@@ -88,19 +85,6 @@ npm run dev
 ```
 
 The application will be available at `http://localhost:3000`
-
-## 📦 Package Version Locking
-
-To prevent automatic package updates and maintain version consistency, create a `.npmrc` file in your project root:
-
-```
-save-exact=true
-save-prefix=""
-auto-install-peers=false
-prefer-frozen-lockfile=true
-shamefully-hoist=false
-strict-peer-dependencies=true
-```
 
 ## 🗄️ Database Migrations
 
@@ -118,19 +102,6 @@ supabase/migrations/
 ├── 20250812141915_create_room_types_table.sql
 ├── 20250812163102_room_types_enhancements.sql
 └── 20250813140726_add_gst_number_to_hotels.sql
-```
-
-### Creating New Migrations
-
-```bash
-# Create a new migration
-npx supabase migration new your_migration_name
-
-# Apply pending migrations
-npx supabase db push
-
-# Reset database (development only)
-npx supabase db reset
 ```
 
 ## 🏗️ Project Structure
@@ -155,11 +126,6 @@ src/
 ```bash
 # Development server
 pnpm dev          # or: npm run dev
-
-# Database operations
-npx supabase db push          # Apply migrations
-npx supabase db reset         # Reset database
-```
 
 ## 📱 Application Modules
 
@@ -199,13 +165,7 @@ npx supabase db reset         # Reset database
    nvm use 20  # or install Node 20.11.1
    ```
 
-2. **Migration Failures**
-   ```bash
-   npx supabase db reset
-   npx supabase db push
-   ```
-
-3. **Package Installation Issues**
+2. **Package Installation Issues**
    ```bash
    # Using pnpm
    rm -rf node_modules 
