@@ -31,6 +31,17 @@ interface BillItem {
   originalPrice: number;
 }
 
+interface Bill {
+  id: string;
+  bill_number: string;
+  customer_name: string;
+  total: number;
+  created_at: string;
+  payment_status: string;
+  hotel_id: string;
+  items?: BillItem[];
+}
+
 interface BillingSummaryProps {
   hotelId: string;
 }
@@ -63,10 +74,6 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSummaryData();
-  }, [hotelId]);
-
   const fetchSummaryData = async () => {
     try {
       setLoading(true);
@@ -94,24 +101,27 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
 
       if (recentError) throw recentError;
 
-      const totalRevenue = allBills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
-      const totalBills = allBills.length;
+      const typedAllBills = allBills as Bill[];
+      const typedRecentBills = recentBills as Bill[];
+
+      const totalRevenue = typedAllBills.reduce((sum: number, bill: Bill) => sum + (bill.total || 0), 0);
+      const totalBills = typedAllBills.length;
       const averageBillAmount = totalBills > 0 ? totalRevenue / totalBills : 0;
 
-      const todayBills = allBills.filter((bill: any) => new Date(bill.created_at) >= today);
-      const todayRevenue = todayBills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
+      const todayBills = typedAllBills.filter((bill: Bill) => new Date(bill.created_at) >= today);
+      const todayRevenue = todayBills.reduce((sum: number, bill: Bill) => sum + (bill.total || 0), 0);
 
-      const lastMonthBills = allBills.filter((bill: any) => {
+      const lastMonthBills = typedAllBills.filter((bill: Bill) => {
         const billDate = new Date(bill.created_at);
         return billDate >= lastMonth && billDate < now;
       });
-      const lastMonthRevenue = lastMonthBills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
+      const lastMonthRevenue = lastMonthBills.reduce((sum: number, bill: Bill) => sum + (bill.total || 0), 0);
 
-      const previousMonthBills = allBills.filter((bill: any) => {
+      const previousMonthBills = typedAllBills.filter((bill: Bill) => {
         const billDate = new Date(bill.created_at);
         return billDate >= previousMonth && billDate < lastMonth;
       });
-      const previousMonthRevenue = previousMonthBills.reduce((sum: number, bill: any) => sum + (bill.total || 0), 0);
+      const previousMonthRevenue = previousMonthBills.reduce((sum: number, bill: Bill) => sum + (bill.total || 0), 0);
 
       const revenueGrowth = previousMonthRevenue > 0 
         ? ((lastMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100 
@@ -122,7 +132,7 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
 
       const categoryBreakdown = { room: 0, food: 0, service: 0 };
       
-      allBills.forEach((bill: any) => {
+      typedAllBills.forEach((bill: Bill) => {
         if (bill.items && Array.isArray(bill.items)) {
           bill.items.forEach((item: BillItem) => {
             const amount = (item.price || 0) * (item.quantity || 1);
@@ -146,7 +156,7 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
         revenueGrowth,
         billsGrowth,
         categoryBreakdown,
-        recentBills: recentBills.map((bill: any) => ({
+        recentBills: typedRecentBills.map((bill: Bill) => ({
           id: bill.id,
           bill_number: bill.bill_number,
           customer_name: bill.customer_name,
@@ -163,6 +173,10 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSummaryData();
+  }, [hotelId]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
@@ -206,7 +220,7 @@ export default function BillingSummary({ hotelId }: BillingSummaryProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Today's Revenue</p>
+                <p className="text-sm text-gray-600 font-medium">{"Today's Revenue"}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   ₹{summaryData.todayRevenue.toLocaleString()}
                 </p>
